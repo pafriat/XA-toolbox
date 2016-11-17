@@ -1,19 +1,25 @@
 ﻿# CiTriX published Applications Report
 #   Patrice Afriat - pafriat@gmail.com
-#
-# v1.0 - oct. 7 2016
-#
-#
+
+# v1.1 - nov. 17 2016
+
+
 # You are free to use this script in your environment but please e-mail me any improvements.
 
+# Change log:
+# v1.1 script constants changed into input parameters
+# v1.0 first release
+
+[CmdletBinding()]
+param (
+	[string]$server="your_XA_server_name",
+	[string]$delim=";",
+	[string]$outputfile=".\CitrixPublishedAppReport.csv",
+	[string]$version="1.1, "+(Get-Item ($MyInvocation.MyCommand.Definition)).LastWriteTime
+)
+
 begin {
-
-	$server='your_XA_server_name'
-    $delim=';'
-	$csv_report=".\CitrixPublishedAppReport.csv"
-
     # Enter-PSSession can only be used interactively, you can't use it in a script
-	  
     Function CanRemote ($srv) {
         Try {
             $s = New-PSSession $srv -Name "Test" -ErrorAction Stop
@@ -28,9 +34,9 @@ begin {
     }
 
     Clear
-    Write-Host "`n| Citrix published applications extraction`n| script v1.0`n|`n| remote server: $server`n| output file  : $csv_report"
+    Write-Host ("`n| Citrix published applications extraction`n|`n|`tscript v"+$version+"`n|`n|`tremote server: $server`n|`toutput file  : $outputfile")
     Write-Host "`n`no Attempting to connect to $server with PowerShell remoting..."
-    if (CanRemote $server) { New-PSSession -ComputerName $server }
+    if (CanRemote $server) { New-PSSession -ComputerName $server } else { Write-Host "`nExiting script.`n" ; exit }
     Write-host "`n"
     
 	# loading snappins
@@ -96,12 +102,12 @@ process {
     # output file initialisation
     # --------------------------
 
-    Write-Host "`no Deleting output file: $csv_report - please close it if already open" -NoNewline
-    if (Test-Path $csv_report) {
+    Write-Host "`no Deleting output file: $outputfile - please close it if already open" -NoNewline
+    if (Test-Path $outputfile) {
         do { 
             Write-Host "." -NoNewline 
             Start-Sleep -Milliseconds 500
-            Remove-Item $csv_report -ErrorAction SilentlyContinue 
+            Remove-Item $outputfile -ErrorAction SilentlyContinue 
         } until ($?)
     }
 	
@@ -111,7 +117,7 @@ process {
         $temp+=$prop[$p]+$delim*($p -lt $prop.count-1)
     
     }
-    $temp | Out-file -FilePath $csv_report -Encoding Default
+    $temp | Out-file -FilePath $outputfile -Encoding Default
     
     # output file generation
     # ----------------------
@@ -134,11 +140,11 @@ process {
             $accounts=(Get-XAApplicationReport -ComputerName $server -BrowserName $applist[$i].($prop[4])).Accounts.AccountName
             if ($accounts.count) {
                 $accounts | Sort | foreach {
-                    $temp+$_ | Out-file -FilePath $csv_report -Encoding Default -Append
+                    $temp+$_ | Out-file -FilePath $outputfile -Encoding Default -Append
                 }
             }
             else {
-                $temp+"[N/A]" | Out-file -FilePath $csv_report -Encoding Default -Append
+                $temp+"[N/A]" | Out-file -FilePath $outputfile -Encoding Default -Append
             }
             Write-host ("`to "+($applist[$i].BrowserName))
         }
